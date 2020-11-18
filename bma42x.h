@@ -1,4 +1,4 @@
-/**  @file bma42x I2C device class file
+/**  @file bma42x I2C device class file */
 /* 
 ================================================================================
 I2Cdev device library code is placed under the MIT license
@@ -26,6 +26,9 @@ THE SOFTWARE.
 
 #ifndef BMA24X_H
 #define BMA24X_H
+
+#include "mbed.h"
+#include <Stream.h>
 
 // This is the I2C address (8 bit)
 #define BMA42X_SA0                 0x78

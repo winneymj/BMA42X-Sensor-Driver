@@ -34,7 +34,7 @@ int main(void)
     struct bma4_dev bma;
     struct bma4_accel sens_data;
     struct bma4_accel_config accel_conf;
-    int8_t_t rslt;
+    int8_t rslt;
     float x, y, z;
 
     /* Variable that holds the accelerometer sample count */

@@ -1,4 +1,4 @@
-/**  @file bma42x I2C device class file
+/**  @file bma42x I2C device class file */
 /* 
 ================================================================================
 I2Cdev device library code is placed under the MIT license
@@ -294,7 +294,7 @@ void BMA42X::_sendData(uint8_t len, uint8_t* data) {
 /** @brief Low level Init
  *  @brief Init the configuration registers in accordance with the datasheet
  */
-void SSD1308::_init() {
+void BMA42X::_init() {
 
   // _sendCommand(SET_DISPLAY_POWER_OFF);      // 0xAE
 }
