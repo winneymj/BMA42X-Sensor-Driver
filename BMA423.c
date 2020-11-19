@@ -28,20 +28,27 @@ THE SOFTWARE.
 #include "src/bma4_defs.h"
 #include "src/bma4_common.h"
 
+struct bma4_dev _bma;
 
 /** @brief High level Init, most settings remain at Power-On reset value
  */
 int8_t BMA423_init() {
 
-  struct bma4_dev bma;
-
   // I2C or SPI
-  int8_t rslt = bma4_interface_selection(&bma, BMA42X_B_VARIANT);
+  int8_t rslt = bma4_interface_selection(&_bma, BMA42X_B_VARIANT);
   bma4_error_codes_print_result("bma4_interface_selection", rslt);
 
   // Sensor initialization
-  rslt = bma423_init(&bma);
+  rslt = bma423_init(&_bma);
   bma4_error_codes_print_result("bma423_init", rslt);
+
+  // Upload Configuration file to enable the features of the sensor
+  rslt = bma423_write_config_file(&_bma);
+  bma4_error_codes_print_result("bma423_write_config_file", rslt);
+
+  // Enable the accelerometer
+  rslt = bma4_set_accel_enable(1, &_bma);
+  bma4_error_codes_print_result("bma4_set_accel_enable", rslt);
 
   return rslt;
 }
