@@ -42,6 +42,11 @@
 #ifndef BMA4_DEFS_H__
 #define BMA4_DEFS_H__
 
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
+
+
 /*********************************************************************/
 /**\ header files */
 #ifdef __KERNEL__
@@ -1140,5 +1145,9 @@ struct bma4_temp_axes_val
     /* Z data */
     int32_t z;
 };
+
+// #ifdef __cplusplus
+// }
+// #endif /* End of CPP guard */
 
 #endif /* End of BMA4_DEFS_H__ */
