@@ -21,8 +21,9 @@ static uint8_t dev_addr;
  */
 int8_t user_i2c_init(void)
 {
-
     /* Implement I2C bus initialization according to the target machine. */
+    i2c_set_freq(500000); // 500KHz
+
     return 0;
 }
 
@@ -71,8 +72,37 @@ int8_t user_spi_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length
  */
 int8_t user_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
+    if (NULL != intf_ptr)
+    {
+        const uint8_t device_addr = *(uint8_t *)intf_ptr;
 
+        // Write to I2C
+        i2c_wr(device_addr, reg_addr, reg_data, length);
+    }
     /* Implement the I2C write routine according to the target machine. */
+    return 0;
+}
+
+/*!
+ * @brief Function for initialization of I2C address.
+ */
+int8_t user_i2c_dev_addr(uint8_t addr)
+{
+    // 1 bit left shit of the address.
+    // mbed uses 8 bit address, while our sensor
+    // has a 7 bit address
+    dev_addr = addr << 1;
+
+    return 0;
+}
+
+/*!
+ * @brief Function for initialization of SPI address to zero
+ */
+int8_t user_spi_dev_addr()
+{
+    dev_addr = 0;
+
     return 0;
 }
 
@@ -98,7 +128,7 @@ int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
          * For I2C : BMA4_I2C_INTF
          * For SPI : BMA4_SPI_INTF
          */
-        bma->intf = BMA4_I2C_INTF;
+        bma->intf = BMA4_I2C_INTF; // Default to I2C
 
         /* Bus configuration : I2C */
         if (bma->intf == BMA4_I2C_INTF)
@@ -107,7 +137,7 @@ int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
 
             /* To initialize the user I2C function */
             user_i2c_init();
-            dev_addr = BMA4_I2C_ADDR_PRIMARY;
+            user_i2c_dev_addr(BMA4_I2C_ADDR_PRIMARY);
             bma->bus_read = user_i2c_read;
             bma->bus_write = user_i2c_write;
         }
@@ -119,7 +149,7 @@ int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
 
             /* To initialize the user SPI function */
             user_spi_init();
-            dev_addr = 0;
+            user_spi_dev_addr();
             bma->bus_read = user_spi_read;
             bma->bus_write = user_spi_write;
         }
