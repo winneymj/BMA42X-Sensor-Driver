@@ -7,6 +7,19 @@
 #include <stdio.h>
 #include "bma4_common.h"
 
+#if 0
+#define DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINTF(...)
+#endif
+
+#if 1
+#define ERROR_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define ERROR_PRINTF(...)
+#endif
+
+
 /******************************************************************************/
 /*!                Static variable definition                                 */
 
@@ -21,9 +34,12 @@ static uint8_t dev_addr;
  */
 int8_t user_i2c_init(void)
 {
-    /* Implement I2C bus initialization according to the target machine. */
-    i2c_set_freq(500000); // 500KHz
+    DEBUG_PRINTF("user_i2c_init: ENTER\r\n");
 
+    /* Implement I2C bus initialization according to the target machine. */
+    i2c_set_freq(100000); // 100KHz
+
+    DEBUG_PRINTF("user_i2c_init: EXIT\r\n");
     return 0;
 }
 
@@ -49,12 +65,34 @@ int8_t user_spi_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void 
 
 /*!
  * @brief Function for reading the sensor's registers through I2C bus.
+ * returns 0 if success else -1
  */
 int8_t user_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
+    DEBUG_PRINTF("user_i2c_read: ENTER\r\n");
+    DEBUG_PRINTF("user_i2c_read: reg_addr=0x%x, len=%d\r\n", reg_addr, length);
 
-    /* Implement the I2C read routine according to the target machine. */
-    return 0;
+
+    /* Read from registers using I2C. Return 0 for a successful execution. */
+
+    int ret = BMA4_OK;
+
+    const uint8_t i2c_addr = *(uint8_t *)intf_ptr;
+    DEBUG_PRINTF("user_i2c_read: i2c_addr=0x%x\r\n", i2c_addr);
+
+    ret = i2c_wr(i2c_addr << 1, (const char *)&reg_addr, 1, FALSE);
+    if (ret != BMA4_OK) // Failed writing
+    {
+        ERROR_PRINTF("user_i2c_read: Read Failed writing address, returned %i\r\n", ret);
+    }
+
+    ret = i2c_rd(i2c_addr << 1, (char *)reg_data, length, FALSE);
+    if (ret != BMA4_OK) // Failed reading
+    {
+        ERROR_PRINTF("user_i2c_read: Read Failed reading , returned %i\r\n", ret);
+    }
+
+    return ret;
 }
 
 /*!
@@ -72,38 +110,36 @@ int8_t user_spi_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length
  */
 int8_t user_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
+    DEBUG_PRINTF("user_i2c_write: ENTER\r\n");
+    DEBUG_PRINTF("user_i2c_write: reg_addr=0x%x, reg_data=0x%x, len=%d\r\n", reg_addr, *reg_data, length);
+
+	uint8_t buffer[length + 1];
+
+	buffer[0] = reg_addr;
+	memcpy(&buffer[1], reg_data, length);
+
+    int ret = BMA4_OK;
+
     if (NULL != intf_ptr)
     {
         const uint8_t device_addr = *(uint8_t *)intf_ptr;
+        DEBUG_PRINTF("user_i2c_write: device_addr=0x%x\r\n", device_addr);
 
         // Write to I2C
-        i2c_wr(device_addr, reg_addr, reg_data, length);
+        // Write register address
+        // ret = i2c_wr(device_addr << 1, &reg_addr, 1, TRUE);
+        // Write data
+        ret = i2c_wr(device_addr << 1, buffer, length + 1, FALSE);
     }
+
+    if (ret != BMA4_OK) // Failed writing
+    {
+        ERROR_PRINTF("user_i2c_write: Read Failed reading , returned %i\r\n", ret);
+    }
+
     /* Implement the I2C write routine according to the target machine. */
-    return 0;
-}
-
-/*!
- * @brief Function for initialization of I2C address.
- */
-int8_t user_i2c_dev_addr(uint8_t addr)
-{
-    // 1 bit left shit of the address.
-    // mbed uses 8 bit address, while our sensor
-    // has a 7 bit address
-    dev_addr = addr << 1;
-
-    return 0;
-}
-
-/*!
- * @brief Function for initialization of SPI address to zero
- */
-int8_t user_spi_dev_addr()
-{
-    dev_addr = 0;
-
-    return 0;
+    DEBUG_PRINTF("user_i2c_write: EXIT, ret=%d\r\n", ret);
+    return ret;
 }
 
 /*!
@@ -112,7 +148,7 @@ int8_t user_spi_dev_addr()
  */
 void user_delay(uint32_t period_us, void *intf_ptr)
 {
-    /* Implement the delay routine according to the target machine. */
+    delay_us(period_us);
 }
 
 /*!
@@ -120,6 +156,8 @@ void user_delay(uint32_t period_us, void *intf_ptr)
  */
 int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
 {
+    DEBUG_PRINTF("bma4_interface_selection: ENTER\r\n");
+
     int8_t rslt = BMA4_OK;
 
     if (bma != NULL)
@@ -133,11 +171,11 @@ int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
         /* Bus configuration : I2C */
         if (bma->intf == BMA4_I2C_INTF)
         {
-            printf("I2C Interface \n");
+            DEBUG_PRINTF("I2C Interface \n\r");
 
             /* To initialize the user I2C function */
             user_i2c_init();
-            user_i2c_dev_addr(BMA4_I2C_ADDR_PRIMARY);
+            dev_addr = BMA4_I2C_ADDR_PRIMARY;
             bma->bus_read = user_i2c_read;
             bma->bus_write = user_i2c_write;
         }
@@ -145,11 +183,11 @@ int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
         /* Bus configuration : SPI */
         else if (bma->intf == BMA4_SPI_INTF)
         {
-            printf("SPI Interface \n");
+            DEBUG_PRINTF("SPI Interface \n\r");
 
             /* To initialize the user SPI function */
             user_spi_init();
-            user_spi_dev_addr();
+            dev_addr = 0;
             bma->bus_read = user_spi_read;
             bma->bus_write = user_spi_write;
         }
@@ -171,8 +209,8 @@ int8_t bma4_interface_selection(struct bma4_dev *bma, uint8_t variant)
         rslt = BMA4_E_NULL_PTR;
     }
 
+    DEBUG_PRINTF("bma4_interface_selection: EXIT\r\n");
     return rslt;
-
 }
 
 /*!
